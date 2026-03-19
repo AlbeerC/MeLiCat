@@ -1,12 +1,14 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { DashboardHeader } from "./dashboard-header"
-import { MeliConnectionCard } from "./meli-connection-card"
-import { InvoicesTable, type Invoice } from "./invoices-table"
+import { useEffect, useState } from "react";
+import { DashboardHeader } from "./dashboard-header";
+import { MeliConnectionCard } from "./meli-connection-card";
+import { InvoicesTable, type Invoice } from "./invoices-table";
+import { generateCodeChallenge, generateCodeVerifier } from "@/lib/pkce";
+import { downloadTxtFile } from "@/utils/DownloadTxtFile";
 
 interface DashboardProps {
-  onLogout: () => void
+  onLogout: () => void;
 }
 
 const mockInvoices: Invoice[] = [
@@ -60,47 +62,105 @@ const mockInvoices: Invoice[] = [
     amount: 156200,
     status: "Pagado",
   },
-]
+];
 
 export function Dashboard({ onLogout }: DashboardProps) {
-  const [isMeliConnected, setIsMeliConnected] = useState(false)
-  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(new Set())
+  const [isMeliConnected, setIsMeliConnected] = useState(false);
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(
+    new Set(),
+  );
 
-  const mockUserName = "Juan Pérez"
-  const mockStoreName = "Tienda ElectroShop Argentina"
+  /*   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
 
-  const handleConnectMeli = () => {
-    setIsMeliConnected(true)
-  }
+    if (code) {
+      // Por ahora, como es MVP, simulamos que el código es válido
+      // En el futuro, acá harías el canje por el Token real
+      setIsMeliConnected(true);
+
+      // Limpiamos la URL para que no se vea el código
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      console.log("Conectado con éxito a MeLi. Código recibido:", code);
+    }
+  }, []); */
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+
+    // Si entramos con ?test=true, activamos todo sin pedirle nada a MeLi
+    if (code || window.location.search.includes("test=true")) {
+      setIsMeliConnected(true);
+      console.log("Modo Test activado");
+    }
+  }, []);
+
+  const mockUserName = "Juan Pérez";
+  const mockStoreName = "Tienda ElectroShop Argentina";
+
+  const handleConnect = async () => {
+    const verifier = generateCodeVerifier();
+    // ¡CLAVE!: Guardamos el verifier en localStorage para cuando el usuario vuelva
+    localStorage.setItem("meli_verifier", verifier);
+
+    const challenge = await generateCodeChallenge(verifier);
+
+    const clientId = process.env.NEXT_PUBLIC_MELI_CLIENT_ID;
+    const redirectUri = process.env.PUBLIC_URL_DEPLOY;
+
+    const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&code_challenge=${challenge}&code_challenge_method=S256`;
+
+    // Redirigimos a Mercado Libre
+    window.location.href = authUrl;
+  };
 
   const handleDisconnectMeli = () => {
-    setIsMeliConnected(false)
-    setSelectedInvoiceIds(new Set())
-  }
+    setIsMeliConnected(false);
+    setSelectedInvoiceIds(new Set());
+  };
 
   const handleSelectAll = () => {
     if (selectedInvoiceIds.size === mockInvoices.length) {
-      setSelectedInvoiceIds(new Set())
+      setSelectedInvoiceIds(new Set());
     } else {
-      setSelectedInvoiceIds(new Set(mockInvoices.map((inv) => inv.id)))
+      setSelectedInvoiceIds(new Set(mockInvoices.map((inv) => inv.id)));
     }
-  }
+  };
 
   const handleSelectOne = (id: string) => {
-    const newSelected = new Set(selectedInvoiceIds)
+    const newSelected = new Set(selectedInvoiceIds);
     if (newSelected.has(id)) {
-      newSelected.delete(id)
+      newSelected.delete(id);
     } else {
-      newSelected.add(id)
+      newSelected.add(id);
     }
-    setSelectedInvoiceIds(newSelected)
-  }
+    setSelectedInvoiceIds(newSelected);
+  };
 
   const handleGenerateTxt = () => {
-    alert(
-      `Se simulará la generación del archivo Catedral para ${selectedInvoiceIds.size} facturas.`
-    )
-  }
+    // Filtramos solo las facturas que el usuario marcó en el checkbox
+    const selectedData = mockInvoices.filter((inv) =>
+      selectedInvoiceIds.has(inv.id),
+    );
+
+    if (selectedData.length === 0) return;
+
+    // Creamos el encabezado (esto lo ajustaremos con el Excel de Catedral)
+    let content = "Fecha;ID_Orden;Cliente;CUIT_DNI;Monto;Estado\n";
+
+    // Agregamos cada fila
+    selectedData.forEach((inv) => {
+      content += `${inv.date};${inv.orderId};${inv.clientName};${inv.cuitDni};${inv.amount};${inv.status}\n`;
+    });
+
+    // Generamos el nombre del archivo con la fecha de hoy
+    const fileName = `Ventas_MeLi_${new Date().toISOString().split("T")[0]}.txt`;
+
+    // Disparamos la descarga
+    downloadTxtFile(content, fileName);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,7 +170,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
           <MeliConnectionCard
             isConnected={isMeliConnected}
             storeName={mockStoreName}
-            onConnect={handleConnectMeli}
+            onConnect={handleConnect}
             onDisconnect={handleDisconnectMeli}
           />
           {isMeliConnected && (
@@ -125,5 +185,5 @@ export function Dashboard({ onLogout }: DashboardProps) {
         </div>
       </main>
     </div>
-  )
+  );
 }
