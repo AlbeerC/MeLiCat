@@ -1,0 +1,50 @@
+[
+  {
+    "id": 23418,
+    "date_created": "2026-03-18T10:00:00.000-03:00",
+    "total_amount": 18223.05,
+    "status": "paid",
+    "billing_info": {
+      "doc_type": "DNI",
+      "doc_number": "0",
+      "name": "Consumidor Final"
+    },
+    "pack_id": 86118078086906
+  },
+  {
+    "id": 60856,
+    "date_created": "2026-03-18T11:30:00.000-03:00",
+    "total_amount": 99749.99,
+    "status": "paid",
+    "billing_info": {
+      "doc_type": "CUIT",
+      "doc_number": "30-12345678-9",
+      "name": "Establecimiento Don Nestor S.r"
+    },
+    "pack_id": 86118078844699
+  },
+  {
+    "id": 23419,
+    "date_created": "2026-03-18T14:15:00.000-03:00",
+    "total_amount": 50400.00,
+    "status": "paid",
+    "billing_info": {
+      "doc_type": "DNI",
+      "doc_number": "0",
+      "name": "Consumidor Final"
+    },
+    "pack_id": 86118078163213
+  },
+  {
+    "id": 60862,
+    "date_created": "2026-03-18T16:45:00.000-03:00",
+    "total_amount": 62895.00,
+    "status": "paid",
+    "billing_info": {
+      "doc_type": "CUIT",
+      "doc_number": "30-71234567-8",
+      "name": "Sol Y Cafe Sas"
+    },
+    "pack_id": 86118086785214
+  }
+]

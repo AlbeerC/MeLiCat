@@ -7,3 +7,4 @@ export const downloadTxtFile = (content: string, fileName: string) => {
   element.click();
   document.body.removeChild(element);
 };
+

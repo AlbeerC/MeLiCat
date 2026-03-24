@@ -7,68 +7,18 @@ import { InvoicesTable, type Invoice } from "./invoices-table";
 import { generateCodeChallenge, generateCodeVerifier } from "@/lib/pkce";
 import { downloadTxtFile } from "@/utils/DownloadTxtFile";
 
-interface DashboardProps {
+/* interface DashboardProps {
   onLogout: () => void;
-}
+} */
 
-const mockInvoices: Invoice[] = [
-  {
-    id: "1",
-    orderId: "MLB-2000456789",
-    date: "15/03/2026",
-    clientName: "María González",
-    clientUsername: "maria.gonzalez",
-    cuitDni: "20-34567890-1",
-    amount: 4500000,
-    status: "Pagado",
-  },
-  {
-    id: "2",
-    orderId: "MLB-2000456790",
-    date: "15/03/2026",
-    clientName: "Carlos Rodríguez",
-    clientUsername: "carlos_rod",
-    cuitDni: "23-45678901-9",
-    amount: 128500,
-    status: "Pagado",
-  },
-  {
-    id: "3",
-    orderId: "MLB-2000456791",
-    date: "14/03/2026",
-    clientName: "Ana Martínez",
-    clientUsername: "ana.martinez",
-    cuitDni: "27-56789012-4",
-    amount: 32750,
-    status: "Pagado",
-  },
-  {
-    id: "4",
-    orderId: "MLB-2000456792",
-    date: "14/03/2026",
-    clientName: "Pedro Sánchez",
-    clientUsername: "pedrosanchez",
-    cuitDni: "20-67890123-8",
-    amount: 89000,
-    status: "Pagado",
-  },
-  {
-    id: "5",
-    orderId: "MLB-2000456793",
-    date: "13/03/2026",
-    clientName: "Laura Fernández",
-    clientUsername: "lauraf_2024",
-    cuitDni: "24-78901234-2",
-    amount: 156200,
-    status: "Pagado",
-  },
-];
-
-export function Dashboard({ onLogout }: DashboardProps) {
+export function Dashboard() {
   const [isMeliConnected, setIsMeliConnected] = useState(false);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<Set<string>>(
     new Set(),
   );
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   /*   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -95,10 +45,40 @@ export function Dashboard({ onLogout }: DashboardProps) {
       setIsMeliConnected(true);
       console.log("Modo Test activado");
     }
+
+    // Cargamos los datos de las ventas
+    const fetchSales = async () => {
+      try {
+        const response = await fetch("/sales.json");
+        const data = await response.json();
+
+        // Adapt data
+        const adaptedData = data.map((order: any) => ({
+          id: order.id.toString(),
+          orderId: `ML-${order.id}`,
+          // Formateamos fecha de ISO a DD/MM/YYYY
+          date: new Date(order.date_created).toLocaleDateString("es-AR"),
+          clientName: order.billing_info?.name || "Consumidor Final",
+          cuitDni: order.billing_info?.doc_number || "0",
+          amount: order.total_amount,
+          status: order.status === "paid" ? "Pagado" : "Pendiente",
+          tipo: order.billing_info?.doc_type === "CUIT" ? "A" : "B",
+          cae: order.pack_id?.toString() || "",
+        }));
+
+        setInvoices(adaptedData);
+      } catch (error) {
+        setError(error as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSales();
   }, []);
 
-  const mockUserName = "Juan Pérez";
-  const mockStoreName = "Tienda ElectroShop Argentina";
+  const mockUserName = "Distribuidora SuSeguridad";
+  const mockStoreName = "Distribuidora SuSeguridad";
 
   const handleConnect = async () => {
     const verifier = generateCodeVerifier();
@@ -108,7 +88,7 @@ export function Dashboard({ onLogout }: DashboardProps) {
     const challenge = await generateCodeChallenge(verifier);
 
     const clientId = process.env.NEXT_PUBLIC_MELI_CLIENT_ID;
-    const redirectUri = process.env.PUBLIC_URL_DEPLOY;
+    const redirectUri = process.env.NEXT_PUBLIC_URL_DEPLOY;
 
     const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&code_challenge=${challenge}&code_challenge_method=S256`;
 
@@ -122,10 +102,10 @@ export function Dashboard({ onLogout }: DashboardProps) {
   };
 
   const handleSelectAll = () => {
-    if (selectedInvoiceIds.size === mockInvoices.length) {
+    if (selectedInvoiceIds.size === invoices.length) {
       setSelectedInvoiceIds(new Set());
     } else {
-      setSelectedInvoiceIds(new Set(mockInvoices.map((inv) => inv.id)));
+      setSelectedInvoiceIds(new Set(invoices.map((inv) => inv.id)));
     }
   };
 
@@ -139,32 +119,133 @@ export function Dashboard({ onLogout }: DashboardProps) {
     setSelectedInvoiceIds(newSelected);
   };
 
-  const handleGenerateTxt = () => {
-    // Filtramos solo las facturas que el usuario marcó en el checkbox
+  /*   const handleGenerateTxt = () => {
     const selectedData = mockInvoices.filter((inv) =>
       selectedInvoiceIds.has(inv.id),
     );
-
     if (selectedData.length === 0) return;
 
-    // Creamos el encabezado (esto lo ajustaremos con el Excel de Catedral)
-    let content = "Fecha;ID_Orden;Cliente;CUIT_DNI;Monto;Estado\n";
+    // Función auxiliar para forzar el ancho exacto (recorta o rellena)
+    const formatField = (text: string | number, width: number) => {
+      const cleanText = text?.toString() || "";
+      return cleanText.substring(0, width).padEnd(width, " ");
+    };
 
-    // Agregamos cada fila
+    // Función para montos: SIN puntos de miles, COMA decimal y alineado a la IZQUIERDA
+    const formatMontoCatedral = (valor: number) => {
+      const strMonto = valor.toFixed(2).replace(".", ",");
+      return strMonto.padEnd(15, " ");
+    };
+
+    let content = "";
+
     selectedData.forEach((inv) => {
-      content += `${inv.date};${inv.orderId};${inv.clientName};${inv.cuitDni};${inv.amount};${inv.status}\n`;
+      const esFacturaA = inv.type === "A";
+
+      // Lógica de anonimato para Catedral:
+      // Si es B, forzamos "CF" y "Consumidor Final" como en el original
+      const codigoCliente = esFacturaA ? inv.clientName : "CF";
+      const nombreParaArchivo = esFacturaA
+        ? inv.clientName
+        : "Consumidor Final";
+
+      let line = "";
+
+      // Columna 1 a 5: Datos del cliente y condiciones
+      line += formatField(codigoCliente, 15); // Código
+      line += formatField(nombreParaArchivo, 45); // Cliente
+      line += formatField("Contado", 45); // Condición de Venta
+      line += formatField("ML", 42); // Vendedor
+      line += formatField("Factura Remito", 45); // Comprobante
+
+      // Columna 6 a 10: Letra, CAE y Fechas
+      line += formatField(inv.type, 2); // Letra (A o B)
+      line += formatField(inv.cae || "", 15); // CAE (15 chars según VENTAS.TXT)
+      line += formatField(inv.date, 11); // Fecha
+      line += formatField(inv.date, 11); // F. Contable
+      line += formatField("4", 2); // Estado
+
+      // Columna 11 a 13: Moneda y Totales
+      line += formatField("Peso", 45); // Moneda
+      line += formatField("1,0000", 7); // Cotización
+      line += formatMontoCatedral(inv.amount); // Total (Usa la función sin puntos de miles)
+
+      // Columna 14 a 17: Datos finales del comprobante
+      line += formatField("FAC", 4); // Código comp.
+      line += formatField("5", 5); // Sucursal
+      line += formatField(inv.id.padStart(5, "0"), 6); // Número de factura
+      line += formatField("28/03/2026", 11); // Vto. CAE (Simulado)
+
+      content += line + "\r\n";
     });
 
-    // Generamos el nombre del archivo con la fecha de hoy
-    const fileName = `Ventas_MeLi_${new Date().toISOString().split("T")[0]}.txt`;
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `VENTAS_MELI_${new Date().toISOString().split("T")[0]}.txt`;
+    link.click();
+  }; */
 
-    // Disparamos la descarga
-    downloadTxtFile(content, fileName);
+  const handleGenerateTxt = () => {
+    const selectedData = invoices.filter((inv) =>
+      selectedInvoiceIds.has(inv.id),
+    );
+    if (selectedData.length === 0) return;
+
+    // 1. Definimos el encabezado (basado en VENTAS.TXT)
+    const incluirEncabezado = true; // Cambiá a false si el sistema de tu amigo tira error
+    const header =
+      "Código\tCliente\tCondición de Venta\tVendedor\tComprobante\tLetra\tCAE\tFecha\tF.Contable\tEstado\tMoneda\tCot.\tTotal\tCódigo\tSuc.\tNúmero\tVto. CAE\t";
+
+    let content = incluirEncabezado ? header + "\r\n" : "";
+
+    selectedData.forEach((inv) => {
+      const esFacturaA = inv.type === "A";
+
+      // Si es Factura B, forzamos los datos de "Consumidor Final" [cite: 52, 53]
+      const codigoCliente = esFacturaA ? inv.clientName.substring(0, 15) : "CF";
+      const nombreParaArchivo = esFacturaA
+        ? inv.clientName
+        : "Consumidor Final";
+
+      // Creamos el array de campos en el orden EXACTO del TXT
+      const campos = [
+        codigoCliente.padEnd(15, " "), // Col 1: Código
+        nombreParaArchivo.padEnd(30, " "), // Col 2: Cliente
+        "Contado".padEnd(45, " "), // Col 3: Condición
+        "ML".padEnd(42, " "), // Col 4: Vendedor
+        "Factura Remito".padEnd(45, " "), // Col 5: Comprobante
+        inv.type, // Col 6: Letra [cite: 52, 62]
+        inv.cae || "", // Col 7: CAE [cite: 52, 62]
+        inv.date, // Col 8: Fecha [cite: 52, 62]
+        inv.date, // Col 9: F. Contable [cite: 52, 62]
+        "4", // Col 10: Estado [cite: 52, 62]
+        "Peso".padEnd(45, " "), // Col 11: Moneda
+        "1,0000", // Col 12: Cotización
+        inv.amount.toFixed(2).replace(".", ","), // Col 13: Total
+        "FAC", // Col 14: Código comprobante
+        "5", // Col 15: Sucursal
+        inv.id.padStart(5, "0"), // Col 16: Número
+        "28/3/2026", // Col 17: Vto. CAE
+      ];
+
+      // Unimos todo con TABS y agregamos el salto de línea Windows
+      content += campos.join("\t") + "\t\r\n";
+    });
+
+    // Generación del archivo para descarga
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `VENTAS_MELI_${new Date().toISOString().split("T")[0]}.txt`;
+    link.click();
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader userName={mockUserName} onLogout={onLogout} />
+      <DashboardHeader userName={mockUserName} />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="space-y-6">
           <MeliConnectionCard
@@ -173,9 +254,9 @@ export function Dashboard({ onLogout }: DashboardProps) {
             onConnect={handleConnect}
             onDisconnect={handleDisconnectMeli}
           />
-          {isMeliConnected && (
+          {isMeliConnected && !loading && (
             <InvoicesTable
-              invoices={mockInvoices}
+              invoices={invoices}
               selectedIds={selectedInvoiceIds}
               onSelectAll={handleSelectAll}
               onSelectOne={handleSelectOne}
