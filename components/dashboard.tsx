@@ -102,22 +102,40 @@ export function Dashboard() {
   const mockStoreName = "Distribuidora SuSeguridad";
 
 const handleConnect = async () => {
-  // Hardcodeamos los valores que YA SABEMOS que tenés bien en MeLi
+  // 1. Usamos valores fijos para eliminar sospechas de las ENV
   const clientId = "3167839995667880"; 
-  const redirectUri = "https://meli-cat.vercel.app"; // Sin barra al final
+  const redirectUri = "https://meli-cat.vercel.app"; 
+
+  console.log("Iniciando salto a MeLi...");
 
   try {
+    // 2. Generación de claves PKCE
     const verifier = generateCodeVerifier();
-    localStorage.setItem("meli_verifier", verifier);
     const challenge = await generateCodeChallenge(verifier);
+    
+    // Guardamos el verifier (es fundamental para el paso posterior)
+    localStorage.setItem("meli_verifier", verifier);
 
-    // Armamos la URL manualmente
-    const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
+    // 3. Construcción de URL
+    const authUrl = `https://auth.mercadolibre.com.ar/authorization?` + 
+                    `response_type=code` +
+                    `&client_id=${clientId}` +
+                    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+                    `&code_challenge=${challenge}` +
+                    `&code_challenge_method=S256`;
 
-    console.log("SALTANDO A MELI:", authUrl);
-    window.location.href = authUrl;
+    console.log("URL Final:", authUrl);
+
+    // 4. Redirección forzada
+    // Usamos setTimeout para dar tiempo al localStorage a persistir
+    setTimeout(() => {
+      window.location.assign(authUrl);
+    }, 100);
+
   } catch (err) {
-    console.error("Error en PKCE:", err);
+    // Si esto sale, el problema está en tu archivo @/lib/pkce
+    alert("Error crítico en la generación de seguridad PKCE");
+    console.error("Fallo en PKCE:", err);
   }
 };
 

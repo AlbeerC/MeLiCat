@@ -1,14 +1,20 @@
-"use client"
+"use client";
 
-import { Link2, Link2Off, Store, CheckCircle2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Link2, Link2Off, Store, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface MeliConnectionCardProps {
-  isConnected: boolean
-  storeName: string
-  onConnect: () => void
-  onDisconnect: () => void
+  isConnected: boolean;
+  storeName: string;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }
 
 export function MeliConnectionCard({
@@ -36,7 +42,9 @@ export function MeliConnectionCard({
                 <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Cuenta Vinculada</p>
+                <p className="text-sm font-medium text-foreground">
+                  Cuenta Vinculada
+                </p>
                 <p className="text-sm text-muted-foreground">{storeName}</p>
               </div>
             </div>
@@ -61,10 +69,15 @@ export function MeliConnectionCard({
               </svg>
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              Conecta tu cuenta de MercadoLibre para comenzar a sincronizar tus ventas
+              Conecta tu cuenta de MercadoLibre para comenzar a sincronizar tus
+              ventas
             </p>
             <Button
-              onClick={onConnect}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault(); // IMPORTANTE: frena cualquier refresco nativo
+                onConnect();
+              }}
               className="bg-[#FFE600] text-[#333] hover:bg-[#FFE600]/90 font-medium"
             >
               <Link2 className="mr-2 h-4 w-4" />
@@ -74,5 +87,5 @@ export function MeliConnectionCard({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
