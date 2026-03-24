@@ -101,38 +101,25 @@ export function Dashboard() {
   const mockUserName = "Distribuidora SuSeguridad";
   const mockStoreName = "Distribuidora SuSeguridad";
 
-  const handleConnect = async () => {
-    // 1. Forzamos la lectura fresca
-    const clientId = process.env.NEXT_PUBLIC_MELI_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_URL_DEPLOY;
+const handleConnect = async () => {
+  // Hardcodeamos los valores que YA SABEMOS que tenés bien en MeLi
+  const clientId = "3167839995667880"; 
+  const redirectUri = "https://meli-cat.vercel.app"; // Sin barra al final
 
-    console.log("Intentando conectar con:", { clientId, redirectUri });
+  try {
+    const verifier = generateCodeVerifier();
+    localStorage.setItem("meli_verifier", verifier);
+    const challenge = await generateCodeChallenge(verifier);
 
-    if (!clientId || clientId === "undefined") {
-      alert("Falta el Client ID. Revisá el dashboard de Vercel.");
-      return;
-    }
+    // Armamos la URL manualmente
+    const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
 
-    if (!redirectUri || redirectUri === "undefined") {
-      alert("Falta la URL de Deploy. Revisá el dashboard de Vercel.");
-      return;
-    }
-
-    try {
-      const verifier = generateCodeVerifier();
-      localStorage.setItem("meli_verifier", verifier);
-      const challenge = await generateCodeChallenge(verifier);
-
-      // IMPORTANTE: encodeURIComponent es vital para el redirect_uri
-      const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
-
-      console.log("Redirigiendo a MeLi...");
-      window.location.href = authUrl;
-    } catch (err) {
-      alert("Error generando claves de seguridad (PKCE).");
-      console.error(err);
-    }
-  };
+    console.log("SALTANDO A MELI:", authUrl);
+    window.location.href = authUrl;
+  } catch (err) {
+    console.error("Error en PKCE:", err);
+  }
+};
 
   const handleDisconnectMeli = () => {
     setIsMeliConnected(false);
