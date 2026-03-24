@@ -102,27 +102,35 @@ export function Dashboard() {
   const mockStoreName = "Distribuidora SuSeguridad";
 
   const handleConnect = async () => {
-    // 1. Capturamos las variables
+    // 1. Forzamos a que lean las variables como strings
     const clientId = process.env.NEXT_PUBLIC_MELI_CLIENT_ID;
     const redirectUri = process.env.NEXT_PUBLIC_URL_DEPLOY;
 
-    // 2. Validación: Si alguna falta, frenamos y avisamos
+    // 2. Si no están, frenamos antes de que explote
     if (!clientId || !redirectUri) {
-      console.error("Faltan variables de entorno:", { clientId, redirectUri });
-      alert("Error de configuración: No se encontraron las credenciales.");
+      alert(
+        "Error: No se cargaron las variables de entorno. Revisá el Dashboard de Vercel.",
+      );
       return;
     }
 
-    // A partir de acá, TypeScript ya sabe que 'clientId' y 'redirectUri' son STRINGS
-    // porque si fueran undefined, la función ya hubiera terminado arriba.
+    try {
+      const verifier = generateCodeVerifier();
+      localStorage.setItem("meli_verifier", verifier);
+      const challenge = await generateCodeChallenge(verifier);
 
-    const verifier = generateCodeVerifier();
-    localStorage.setItem("meli_verifier", verifier);
-    const challenge = await generateCodeChallenge(verifier);
+      // 3. Limpiamos la redirectUri de posibles barras finales que rompan el match con MeLi
+      const cleanRedirectUri = redirectUri.endsWith("/")
+        ? redirectUri.slice(0, -1)
+        : redirectUri;
 
-    const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
+      const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(cleanRedirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
 
-    window.location.href = authUrl;
+      console.log("Viajando a Mercado Libre:", authUrl);
+      window.location.href = authUrl;
+    } catch (err) {
+      console.error("Error en PKCE:", err);
+    }
   };
 
   const handleDisconnectMeli = () => {
