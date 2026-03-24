@@ -80,6 +80,8 @@ export function Dashboard() {
       });
       const data = await response.json();
 
+      console.log("JSON CRUDO DE MERCADO LIBRE:", data);
+
       const adaptedInvoices: Invoice[] = data.results.map((order: any) => ({
         id: order.id.toString(),
         orderId: `ML-${order.id}`,
