@@ -19,63 +19,84 @@ export function Dashboard() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-
-  /*   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
-
-    if (code) {
-      // Por ahora, como es MVP, simulamos que el código es válido
-      // En el futuro, acá harías el canje por el Token real
-      setIsMeliConnected(true);
-
-      // Limpiamos la URL para que no se vea el código
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      console.log("Conectado con éxito a MeLi. Código recibido:", code);
-    }
-  }, []); */
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
 
-    // Si entramos con ?test=true, activamos todo sin pedirle nada a MeLi
-    if (code || window.location.search.includes("test=true")) {
+    if (code) {
+      handleLoginSuccess(code);
+    } else if (window.location.search.includes("test=true")) {
       setIsMeliConnected(true);
-      console.log("Modo Test activado");
     }
-
-    // Cargamos los datos de las ventas
-    const fetchSales = async () => {
-      try {
-        const response = await fetch("/sales.json");
-        const data = await response.json();
-
-        // Adapt data
-        const adaptedData = data.map((order: any) => ({
-          id: order.id.toString(),
-          orderId: `ML-${order.id}`,
-          // Formateamos fecha de ISO a DD/MM/YYYY
-          date: new Date(order.date_created).toLocaleDateString("es-AR"),
-          clientName: order.billing_info?.name || "Consumidor Final",
-          cuitDni: order.billing_info?.doc_number || "0",
-          amount: order.total_amount,
-          status: order.status === "paid" ? "Pagado" : "Pendiente",
-          tipo: order.billing_info?.doc_type === "CUIT" ? "A" : "B",
-          cae: order.pack_id?.toString() || "",
-        }));
-
-        setInvoices(adaptedData);
-      } catch (error) {
-        setError(error as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSales();
   }, []);
+
+  const handleLoginSuccess = async (code: string) => {
+    setLoading(true);
+    try {
+      const verifier = localStorage.getItem("meli_verifier");
+
+      // 1. Intercambiamos el código por el Token en tu API Route
+      const res = await fetch("/api/meli/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, verifier }),
+      });
+
+      const auth = await res.json();
+
+      if (auth.access_token) {
+        setAccessToken(auth.access_token);
+        setIsMeliConnected(true);
+
+        // Limpiamos la URL para que no quede el ?code=...
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
+
+        // 2. Buscamos las ventas reales usando el ID del vendedor que se logueó
+        await fetchRealMeliSales(auth.access_token, auth.user_id);
+      }
+    } catch (err) {
+      console.error("Error al conectar con MeLi:", err);
+      setError(err instanceof Error ? err : new Error("Fallo en la conexión"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRealMeliSales = async (token: string, sellerId: string) => {
+    try {
+      // Pedimos las órdenes a la API de Mercado Libre
+      const response = await fetch(
+        `https://api.mercadolibre.com/orders/search?seller=${sellerId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const data = await response.json();
+
+      // Mapeamos los resultados al formato Invoice de tu tabla
+      const adaptedInvoices: Invoice[] = data.results.map((order: any) => ({
+        id: order.id.toString(),
+        orderId: `ML-${order.id}`,
+        date: new Date(order.date_created).toLocaleDateString("es-AR"),
+        clientName: order.billing_info?.name || "Consumidor Final",
+        cuitDni: order.billing_info?.doc_number || "0",
+        amount: order.total_amount,
+        status: order.status === "paid" ? "Pagado" : "Pendiente",
+        type: order.billing_info?.doc_type === "CUIT" ? "A" : "B",
+        cae: order.pack_id?.toString() || "", // Usamos pack_id como dummy CAE si no hay uno real
+      }));
+
+      setInvoices(adaptedInvoices);
+    } catch (err) {
+      console.error("Error trayendo ventas:", err);
+    }
+  };
 
   const mockUserName = "Distribuidora SuSeguridad";
   const mockStoreName = "Distribuidora SuSeguridad";
