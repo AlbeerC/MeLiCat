@@ -24,12 +24,16 @@ export function Dashboard() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
+    const isTest = urlParams.get("test") === "true";
 
     if (code) {
+      console.log("Código detectado, iniciando intercambio...");
       handleLoginSuccess(code);
-    } else if (window.location.search.includes("test=true")) {
+    } else if (isTest) {
       setIsMeliConnected(true);
+      // Cargar mocks si es necesario
     }
+    // No pongas un "else" que setee la conexión a true
   }, []);
 
   const handleLoginSuccess = async (code: string) => {
@@ -98,20 +102,26 @@ export function Dashboard() {
   const mockStoreName = "Distribuidora SuSeguridad";
 
   const handleConnect = async () => {
-    const verifier = generateCodeVerifier();
-    // ¡CLAVE!: Guardamos el verifier en localStorage para cuando el usuario vuelva
-    localStorage.setItem("meli_verifier", verifier);
-
-    const challenge = await generateCodeChallenge(verifier);
-
+    // 1. Capturamos las variables
     const clientId = process.env.NEXT_PUBLIC_MELI_CLIENT_ID;
     const redirectUri = process.env.NEXT_PUBLIC_URL_DEPLOY;
 
-    console.log("CLIENT ID:", process.env.NEXT_PUBLIC_MELI_CLIENT_ID);
-    console.log("REDIRECT:", process.env.NEXT_PUBLIC_URL_DEPLOY);
-    const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&code_challenge=${challenge}&code_challenge_method=S256`;
+    // 2. Validación: Si alguna falta, frenamos y avisamos
+    if (!clientId || !redirectUri) {
+      console.error("Faltan variables de entorno:", { clientId, redirectUri });
+      alert("Error de configuración: No se encontraron las credenciales.");
+      return;
+    }
 
-    // Redirigimos a Mercado Libre
+    // A partir de acá, TypeScript ya sabe que 'clientId' y 'redirectUri' son STRINGS
+    // porque si fueran undefined, la función ya hubiera terminado arriba.
+
+    const verifier = generateCodeVerifier();
+    localStorage.setItem("meli_verifier", verifier);
+    const challenge = await generateCodeChallenge(verifier);
+
+    const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
+
     window.location.href = authUrl;
   };
 
