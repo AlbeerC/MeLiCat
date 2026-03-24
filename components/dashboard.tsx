@@ -70,16 +70,12 @@ export function Dashboard() {
 
   const fetchRealMeliSales = async (token: string, sellerId: string) => {
     try {
-      // Pedimos las órdenes a la API de Mercado Libre
-      const response = await fetch(
-        `https://api.mercadolibre.com/orders/search?seller=${sellerId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      // LLAMADA A TU PROPIA API (Sin problemas de CORS)
+      const response = await fetch(`/api/meli/orders?sellerId=${sellerId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await response.json();
 
-      // Mapeamos los resultados al formato Invoice de tu tabla
       const adaptedInvoices: Invoice[] = data.results.map((order: any) => ({
         id: order.id.toString(),
         orderId: `ML-${order.id}`,
@@ -89,7 +85,7 @@ export function Dashboard() {
         amount: order.total_amount,
         status: order.status === "paid" ? "Pagado" : "Pendiente",
         type: order.billing_info?.doc_type === "CUIT" ? "A" : "B",
-        cae: order.pack_id?.toString() || "", // Usamos pack_id como dummy CAE si no hay uno real
+        cae: order.pack_id?.toString() || "",
       }));
 
       setInvoices(adaptedInvoices);
