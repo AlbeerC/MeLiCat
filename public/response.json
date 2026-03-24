@@ -1,0 +1,160 @@
+{
+    "query": "",
+    "results": [
+        {
+            "payments": [
+                {
+                    "reason": "Producto De Prueba - No Comprar",
+                    "status_code": null,
+                    "total_paid_amount": 1000,
+                    "operation_type": "regular_payment",
+                    "transaction_amount": 1000,
+                    "transaction_amount_refunded": 0,
+                    "date_approved": "2026-03-24T10:05:58.000-04:00",
+                    "collector": {
+                        "id": 3288993949
+                    },
+                    "coupon_id": null,
+                    "installments": 1,
+                    "authorization_code": null,
+                    "taxes_amount": 0,
+                    "id": 151703360054,
+                    "date_last_modified": "2026-03-24T10:05:58.000-04:00",
+                    "coupon_amount": 0,
+                    "available_actions": [
+                        "refund"
+                    ],
+                    "shipping_cost": 0,
+                    "installment_amount": null,
+                    "date_created": "2026-03-24T10:05:57.000-04:00",
+                    "activation_uri": null,
+                    "overpaid_amount": 0,
+                    "card_id": null,
+                    "status_detail": "accredited",
+                    "issuer_id": "2005",
+                    "payment_method_id": "account_money",
+                    "payment_type": "account_money",
+                    "deferred_period": null,
+                    "atm_transfer_reference": {
+                        "transaction_id": null,
+                        "company_id": null
+                    },
+                    "site_id": "MLA",
+                    "payer_id": 1010664124,
+                    "order_id": 2000015681915558,
+                    "currency_id": "ARS",
+                    "status": "approved",
+                    "transaction_order_id": null
+                }
+            ],
+            "fulfilled": null,
+            "taxes": {
+                "amount": null,
+                "currency_id": null,
+                "id": null
+            },
+            "order_request": {
+                "change": null,
+                "return": null
+            },
+            "expiration_date": "2026-04-21T10:05:58.000-04:00",
+            "feedback": {
+                "buyer": null,
+                "seller": null
+            },
+            "shipping": {
+                "id": null
+            },
+            "date_closed": "2026-03-24T10:05:58.000-04:00",
+            "id": 2000015681915558,
+            "manufacturing_ending_date": null,
+            "order_items": [
+                {
+                    "item": {
+                        "id": "MLA3094792614",
+                        "title": "Producto De Prueba - No Comprar",
+                        "category_id": "MLA412445",
+                        "variation_id": null,
+                        "seller_custom_field": null,
+                        "global_price": null,
+                        "net_weight": null,
+                        "variation_attributes": [],
+                        "warranty": "Sin garantía",
+                        "condition": "new",
+                        "seller_sku": "1PPSAAS"
+                    },
+                    "quantity": 1,
+                    "unit_price": 1000,
+                    "gross_price": 1000,
+                    "currency_id": "ARS",
+                    "manufacturing_days": null,
+                    "picked_quantity": null,
+                    "requested_quantity": {
+                        "measure": "unit",
+                        "value": 1
+                    },
+                    "sale_fee": 1390,
+                    "listing_type_id": "gold_special",
+                    "base_exchange_rate": null,
+                    "base_currency_id": null,
+                    "bundle": null,
+                    "element_id": 1
+                }
+            ],
+            "date_last_updated": "2026-03-24T14:07:38+00:00",
+            "last_updated": "2026-03-24T10:07:36.000-04:00",
+            "comment": null,
+            "pack_id": null,
+            "coupon": {
+                "amount": 0,
+                "id": null
+            },
+            "shipping_cost": null,
+            "date_created": "2026-03-24T10:05:57.000-04:00",
+            "date_created_ttl": null,
+            "pickup_id": null,
+            "status_detail": null,
+            "tags": [
+                "no_shipping",
+                "paid",
+                "not_delivered"
+            ],
+            "buyer": {
+                "id": 1010664124,
+                "nickname": "ALBEERC03"
+            },
+            "seller": {
+                "id": 3288993949,
+                "nickname": "AC20260324092307"
+            },
+            "total_amount": 1000,
+            "paid_amount": 1000,
+            "currency_id": "ARS",
+            "status": "paid",
+            "context": {
+                "application": null,
+                "product_id": null,
+                "channel": "marketplace",
+                "site": "MLA",
+                "flows": []
+            }
+        }
+    ],
+    "sort": {
+        "id": "date_asc",
+        "name": "Date ascending"
+    },
+    "available_sorts": [
+        {
+            "id": "date_desc",
+            "name": "Date descending"
+        }
+    ],
+    "filters": [],
+    "paging": {
+        "total": 1,
+        "offset": 0,
+        "limit": 51
+    },
+    "display": "complete"
+}

@@ -72,34 +72,40 @@ export function Dashboard() {
     }
   };
 
-  const fetchRealMeliSales = async (token: string, sellerId: string) => {
-    try {
-      // LLAMADA A TU PROPIA API (Sin problemas de CORS)
-      const response = await fetch(`/api/meli/orders?sellerId=${sellerId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
+const fetchRealMeliSales = async (token: string, sellerId: string) => {
+  try {
+    const response = await fetch(`/api/meli/orders?sellerId=${sellerId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
 
-      console.log("JSON CRUDO DE MERCADO LIBRE:", data);
+    const adaptedInvoices: Invoice[] = data.results.map((order: any) => {
+      // Mercado Libre no siempre envía billing_info en la orden simple.
+      // Usamos los datos de 'buyer' como respaldo.
+      const buyerName = order.billing_info?.name || order.buyer?.nickname || "Consumidor Final";
+      const docNumber = order.billing_info?.doc_number || "0";
+      const isCuit = order.billing_info?.doc_type === "CUIT";
 
-      const adaptedInvoices: Invoice[] = data.results.map((order: any) => ({
+      return {
         id: order.id.toString(),
         orderId: `ML-${order.id}`,
+        // Formateamos la fecha para que Catedral la entienda (D/M/AAAA)
         date: new Date(order.date_created).toLocaleDateString("es-AR"),
-        clientName: order.billing_info?.name || "Consumidor Final",
-        cuitDni: order.billing_info?.doc_number || "0",
-        amount: order.total_amount,
+        clientName: buyerName,
+        cuitDni: docNumber,
+        amount: order.total_amount, // Viene como 1000 en tu JSON
         status: order.status === "paid" ? "Pagado" : "Pendiente",
-        type: order.billing_info?.doc_type === "CUIT" ? "A" : "B",
-        cae: order.pack_id?.toString() || "",
-      }));
+        type: isCuit ? "A" : "B",
+        // Si pack_id es null, dejamos vacío para que no rompa el TXT
+        cae: order.pack_id ? order.pack_id.toString() : "", 
+      };
+    });
 
-      setInvoices(adaptedInvoices);
-    } catch (err) {
-      console.error("Error trayendo ventas:", err);
-    }
-  };
-
+    setInvoices(adaptedInvoices);
+  } catch (err) {
+    console.error("Error trayendo ventas:", err);
+  }
+};
   const mockUserName = "Distribuidora SuSeguridad";
   const mockStoreName = "Distribuidora SuSeguridad";
 
@@ -254,6 +260,8 @@ const handleConnect = async () => {
         ? inv.clientName
         : "Consumidor Final";
 
+      const numeroFactura = inv.id.length > 8 ? inv.id.slice(-8) : inv.id.padStart(8, "0");
+
       // Creamos el array de campos en el orden EXACTO del TXT
       const campos = [
         codigoCliente.padEnd(15, " "), // Col 1: Código
@@ -271,7 +279,7 @@ const handleConnect = async () => {
         inv.amount.toFixed(2).replace(".", ","), // Col 13: Total
         "FAC", // Col 14: Código comprobante
         "5", // Col 15: Sucursal
-        inv.id.padStart(5, "0"), // Col 16: Número
+        numeroFactura, // Col 16: Número
         "28/3/2026", // Col 17: Vto. CAE
       ];
 
