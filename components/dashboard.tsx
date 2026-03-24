@@ -102,15 +102,19 @@ export function Dashboard() {
   const mockStoreName = "Distribuidora SuSeguridad";
 
   const handleConnect = async () => {
-    // 1. Forzamos a que lean las variables como strings
+    // 1. Forzamos la lectura fresca
     const clientId = process.env.NEXT_PUBLIC_MELI_CLIENT_ID;
     const redirectUri = process.env.NEXT_PUBLIC_URL_DEPLOY;
 
-    // 2. Si no están, frenamos antes de que explote
-    if (!clientId || !redirectUri) {
-      alert(
-        "Error: No se cargaron las variables de entorno. Revisá el Dashboard de Vercel.",
-      );
+    console.log("Intentando conectar con:", { clientId, redirectUri });
+
+    if (!clientId || clientId === "undefined") {
+      alert("Falta el Client ID. Revisá el dashboard de Vercel.");
+      return;
+    }
+
+    if (!redirectUri || redirectUri === "undefined") {
+      alert("Falta la URL de Deploy. Revisá el dashboard de Vercel.");
       return;
     }
 
@@ -119,17 +123,14 @@ export function Dashboard() {
       localStorage.setItem("meli_verifier", verifier);
       const challenge = await generateCodeChallenge(verifier);
 
-      // 3. Limpiamos la redirectUri de posibles barras finales que rompan el match con MeLi
-      const cleanRedirectUri = redirectUri.endsWith("/")
-        ? redirectUri.slice(0, -1)
-        : redirectUri;
+      // IMPORTANTE: encodeURIComponent es vital para el redirect_uri
+      const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
 
-      const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(cleanRedirectUri)}&code_challenge=${challenge}&code_challenge_method=S256`;
-
-      console.log("Viajando a Mercado Libre:", authUrl);
+      console.log("Redirigiendo a MeLi...");
       window.location.href = authUrl;
     } catch (err) {
-      console.error("Error en PKCE:", err);
+      alert("Error generando claves de seguridad (PKCE).");
+      console.error(err);
     }
   };
 
