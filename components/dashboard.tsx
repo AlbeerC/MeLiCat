@@ -90,6 +90,8 @@ export function Dashboard() {
     const clientId = process.env.NEXT_PUBLIC_MELI_CLIENT_ID;
     const redirectUri = process.env.NEXT_PUBLIC_URL_DEPLOY;
 
+    console.log("CLIENT ID:", process.env.NEXT_PUBLIC_MELI_CLIENT_ID);
+    console.log("REDIRECT:", process.env.NEXT_PUBLIC_URL_DEPLOY);
     const authUrl = `https://auth.mercadolibre.com.ar/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&code_challenge=${challenge}&code_challenge_method=S256`;
 
     // Redirigimos a Mercado Libre
