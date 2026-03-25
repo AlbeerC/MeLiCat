@@ -136,9 +136,9 @@ const handleConnect = async () => {
 
     // 4. Redirección forzada
     // Usamos setTimeout para dar tiempo al localStorage a persistir
-    setTimeout(() => {
-      window.location.assign(authUrl);
-    }, 100);
+/*     setTimeout(() => {
+    }, 100); */
+    window.location.assign(authUrl);
 
   } catch (err) {
     // Si esto sale, el problema está en tu archivo @/lib/pkce
