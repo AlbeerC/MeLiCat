@@ -98,8 +98,6 @@ const fetchRealMeliSales = async (token: string, sellerId: string) => {
         amount: order.total_amount, // Viene como 1000 en tu JSON
         status: order.status === "paid" ? "Pagado" : "Pendiente",
         type: isCuit ? "A" : "B",
-        // Si pack_id es null, dejamos vacío para que no rompa el TXT
-        cae: order.pack_id ? order.pack_id.toString() : "", 
       };
     });
 
@@ -249,7 +247,7 @@ const handleConnect = async () => {
     // 1. Definimos el encabezado (basado en VENTAS.TXT)
     const incluirEncabezado = true; // Cambiá a false si el sistema de tu amigo tira error
     const header =
-      "Código\tCliente\tCondición de Venta\tVendedor\tComprobante\tLetra\tCAE\tFecha\tF.Contable\tEstado\tMoneda\tCot.\tTotal\tCódigo\tSuc.\tNúmero\tVto. CAE\t";
+      "Código\tCliente\tCondición de Venta\tVendedor\tComprobante\tLetra\tFecha\tF.Contable\tEstado\tMoneda\tCot.\tTotal\tCódigo\tSuc.\tNúmero";
 
     let content = incluirEncabezado ? header + "\r\n" : "";
 
@@ -272,7 +270,6 @@ const handleConnect = async () => {
         "ML".padEnd(42, " "), // Col 4: Vendedor
         "Factura Remito".padEnd(45, " "), // Col 5: Comprobante
         inv.type, // Col 6: Letra [cite: 52, 62]
-        inv.cae || "", // Col 7: CAE [cite: 52, 62]
         inv.date, // Col 8: Fecha [cite: 52, 62]
         inv.date, // Col 9: F. Contable [cite: 52, 62]
         "4", // Col 10: Estado [cite: 52, 62]
@@ -282,7 +279,6 @@ const handleConnect = async () => {
         "FAC", // Col 14: Código comprobante
         "5", // Col 15: Sucursal
         numeroFactura, // Col 16: Número
-        "28/3/2026", // Col 17: Vto. CAE
       ];
 
       // Unimos todo con TABS y agregamos el salto de línea Windows
