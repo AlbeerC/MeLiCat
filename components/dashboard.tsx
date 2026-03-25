@@ -20,6 +20,7 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState<string>("");
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -79,6 +80,8 @@ const fetchRealMeliSales = async (token: string, sellerId: string) => {
     });
     const data = await response.json();
 
+    setStoreName(data?.results[0]?.seller?.nickname || "");
+
     console.log("Datos de ventas:", data);
 
     const adaptedInvoices: Invoice[] = data.results.map((order: any) => {
@@ -107,7 +110,6 @@ const fetchRealMeliSales = async (token: string, sellerId: string) => {
   }
 };
   const mockUserName = "Distribuidora SuSeguridad";
-  const mockStoreName = "Distribuidora SuSeguridad";
 
 const handleConnect = async () => {
   // 1. Usamos valores fijos para eliminar sospechas de las ENV
@@ -301,7 +303,7 @@ const handleConnect = async () => {
         <div className="space-y-6">
           <MeliConnectionCard
             isConnected={isMeliConnected}
-            storeName={mockStoreName}
+            storeName={storeName}
             onConnect={handleConnect}
             onDisconnect={handleDisconnectMeli}
           />
