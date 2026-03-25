@@ -79,6 +79,8 @@ const fetchRealMeliSales = async (token: string, sellerId: string) => {
     });
     const data = await response.json();
 
+    console.log("Datos de ventas:", data);
+
     const adaptedInvoices: Invoice[] = data.results.map((order: any) => {
       // Mercado Libre no siempre envía billing_info en la orden simple.
       // Usamos los datos de 'buyer' como respaldo.
